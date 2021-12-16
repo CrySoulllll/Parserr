@@ -1,0 +1,45 @@
+from bs4 import BeautifulSoup as BS
+import requests as req
+import unicodedata
+from fake_useragent import UserAgent
+UserAgent().chrome
+response = req.get('https://www.wildberries.ru', headers={'User-Agent': UserAgent().chrome})
+response
+
+
+HOST = 'https://www.wildberries.ru'
+URL = 'https://www.wildberries.ru/catalog/sport/vidy-sporta/velosport/velosipedy?sort=popular&page=2'
+
+def get_html(url):
+    r=req.get(url)
+    return r
+def get_content(html):
+    db_of_products = []
+
+    soup = BS(html, 'html.parser')
+    blocks = soup.find_all('div', class_ = 'product-card__wrapper')
+
+    for item in blocks:
+        cost = str(item.find('div', class_='product-card__brand').find('ins', class_ = 'lower-price'))
+        cost = cost[cost.find('>') + 2:]
+        cost = cost[:cost.find('<')]
+
+        link = str(item)
+        link = link[link.find('/cata'):]
+        link = link[:link.find('"')]
+
+        db_of_products.append(
+            {
+                'Название': item.find('div', class_ = 'product-card__brand-name').find('span', class_ = 'goods-name').get_text(),
+                'Цена': unicodedata.normalize("NFKD", cost),
+                'Ссылка': 'https://www.wildberries.ru' + link
+            }
+        )
+
+    return db_of_products
+
+html = get_html(URL)
+db = get_content(html.text)
+
+for el in db:
+    print(el)
